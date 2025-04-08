@@ -1,3 +1,5 @@
+import datetime
+import hashlib
 import os
 import json
 import asyncio
@@ -88,7 +90,7 @@ if not inited:
     import fix_json
     
     print("重新加载所有 JSON 文件到索引")
-    asyncio.run(init_index())
+    asyncio.get_event_loop().run_until_complete(init_index())
     print("索引完成")
 
     # 创建配置文件
@@ -214,42 +216,55 @@ async def serve_raw_file(file_path: str):
     except (ValueError, OSError) as e:
         abort(500, description=f"服务器错误: {str(e)}")
 
+# 为静态内容设置较长的缓存时间（例如1天）
+STATIC_CACHE_TIMEOUT = 86400  # 24小时 = 86400秒
 
 @app.route('/formatted/<path:file_path>')
 async def serve_formatted_file(file_path: str):
     """
-        提供指定路径下原始文件的内容
-
-        参数:
-            file_path: 请求的文件路径，相对于配置目录
-
-        返回:
-            文件内容或404错误
-        """
-    # 确定基础目录（config 文件夹）
+    提供指定路径下原始文件的内容，并添加缓存控制
+    
+    参数:
+        file_path: 请求的文件路径，相对于配置目录
+        
+    返回:
+        文件内容或404错误
+    """
+    # 确定基础目录（formatted 文件夹）
     base_dir = pathlib.Path('formatted')
-
+    
     # 构建完整文件路径，并规范化路径以防止路径遍历攻击
     try:
         file_path = pathlib.Path(file_path)
         # 确保路径不包含 ".." 以防止目录遍历
         if '..' in file_path.parts:
             abort(403, description="访问被拒绝")
-
+            
         full_path = base_dir / file_path
         abs_path = full_path.resolve()
-
+        
         # 确保文件在 base_dir 目录下
         if not str(abs_path).startswith(str(base_dir.resolve())):
             abort(403, description="访问被拒绝")
-
+            
         # 检查文件是否存在
         if not abs_path.exists() or not abs_path.is_file():
             abort(404, description=f"文件 '{file_path}' 不存在")
-
-        # 返回文件内容
-        return await send_file(abs_path)
-
+            
+        # 获取文件最后修改时间，用于ETag和Last-Modified
+        file_mtime = os.path.getmtime(abs_path)
+        etag = hashlib.md5(f"{file_path}:{file_mtime}".encode()).hexdigest()
+        last_modified = datetime.utcfromtimestamp(file_mtime).strftime('%a, %d %b %Y %H:%M:%S GMT')
+        
+        response = await send_file(abs_path)
+        
+        # 添加缓存控制头
+        response.headers['Cache-Control'] = f'public, max-age={STATIC_CACHE_TIMEOUT}'
+        response.headers['ETag'] = etag
+        response.headers['Last-Modified'] = last_modified
+        
+        return response
+        
     except (ValueError, OSError) as e:
         abort(500, description=f"服务器错误: {str(e)}")
 
@@ -284,11 +299,29 @@ async def serve_config(file_path: str):
 
 @app.route('/key_name_map')
 async def key_name_map():
-    return jsonify(key_to_name_table)
+    response = jsonify(key_to_name_table)
+    
+    # 生成ETag，基于内容的哈希值
+    data_hash = hashlib.md5(str(key_to_name_table).encode()).hexdigest()
+    
+    # 添加缓存控制头
+    response.headers['Cache-Control'] = f'public, max-age={STATIC_CACHE_TIMEOUT}' 
+    response.headers['ETag'] = data_hash
+    
+    return response
 
 @app.route('/char_origin_map')
 async def char_origin_map():
-    return jsonify(char_origin_table)
+    response = jsonify(char_origin_table)
+    
+    # 生成ETag，基于内容的哈希值
+    data_hash = hashlib.md5(str(char_origin_table).encode()).hexdigest()
+    
+    # 添加缓存控制头
+    response.headers['Cache-Control'] = f'public, max-age={STATIC_CACHE_TIMEOUT}'
+    response.headers['ETag'] = data_hash
+
+    return response
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=config['port'])
