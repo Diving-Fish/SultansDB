@@ -14,6 +14,7 @@
     <v-app>
       <v-app-bar app color="primary" dark>
         <v-toolbar-title>领地事件</v-toolbar-title>
+        <a style="margin-left: 16px; padding-top: 6px" href="https://github.com/Diving-Fish/SultansDB"><img src="https://img.shields.io/github/stars/Diving-Fish/SultansDB?style=social"></a>
         <v-spacer></v-spacer>
         <v-text-field
           v-model="globalSearch"
@@ -321,7 +322,7 @@
           },
           searchTrigger() {
             if (this.cardData.id) {
-              window.open(`${axios.defaults.baseURL}search?q="rite": ${this.cardData.id}`, '_blank');
+              window.location.href = `${axios.defaults.baseURL}search?q="rite": ${this.cardData.id}`;
             }
           },
           getTypeText(type) {
@@ -513,15 +514,15 @@
             let suffix = '';
             const num = parseInt(id);
             if (num >= 2000000 && num < 3000000) {
-              prefix = `<a onclick="v.selectCard(${num})" target="_blank">`;
+              prefix = `<a onclick="v.selectCard(${num})">`;
               suffix = '</a>';
             }
             if (num >= 5000000 && num < 5300000) {
-              prefix = `<a href="${axios.defaults.baseURL}config/rite/` + id + '.json" target="_blank">';
+              prefix = `<a href="${axios.defaults.baseURL}config/rite/` + id + '.json">';
               suffix = '</a>';
             }
             if (num >= 5300000 && num < 6000000) {
-              prefix = `<a href="${axios.defaults.baseURL}config/event/` + id + '.json" target="_blank">';
+              prefix = `<a href="${axios.defaults.baseURL}config/event/` + id + '.json">';
               suffix = '</a>';
             }
             return prefix + (this.key_name_map[id] || id) + suffix;
