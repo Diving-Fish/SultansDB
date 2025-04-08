@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="title"> - 苏丹的数据库</title>
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <div id="app">
+    <v-app>
+      <v-app-bar app color="primary" dark>
+        <v-toolbar-title>领地事件</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-text-field
+          v-model="globalSearch"
+          append-icon="mdi-magnify"
+          label="全站搜索"
+          single-line
+          hide-details
+          class="ml-2"
+          @click:append="doSearch"
+          @keyup.enter="doSearch"
+        ></v-text-field>
+      </v-app-bar>
+
+      <v-main>
+        <v-container>
+          <v-card class="mx-auto my-4" max-width="900">
+            <v-card-title class="headline primary white--text">
+              {{ cardData.name }}
+              <v-chip class="ml-2" color="secondary" small>ID: {{ cardData.id }}</v-chip>
+            </v-card-title>
+
+            <v-card-text>
+              <p class="text-h6 font-italic">{{ cardData.text }}</p>
+
+              <v-divider class="my-4"></v-divider>
+
+              <div v-if="cardData.tag_tips && cardData.tag_tips.length > 0">
+                <h3>标签</h3>
+                <v-chip-group>
+                  <v-chip v-for="(tag, index) in cardData.tag_tips" :key="index" color="info" small>
+                    {{ tag }}
+                  </v-chip>
+                </v-chip-group>
+              </div>
+
+              <div class="my-4" v-if="cardData.tips_text && cardData.tips_text.length > 0">
+                <h3>提示信息</h3>
+                <v-card outlined class="pa-3 mb-2" v-for="(tip, index) in cardData.tips_text" :key="'tip-'+index">
+                  <div v-html="formatText(tip)"></div>
+                </v-card>
+              </div>
+
+              <v-expansion-panels class="mt-4">
+                <v-expansion-panel>
+                  <v-expansion-panel-header>卡牌槽位信息</v-expansion-panel-header>
+                  <v-expansion-panel-content>
+                    <div v-for="(slot, key) in cardData.cards_slot" :key="key" class="mb-4 pa-2"
+                      style="border: 1px solid #e0e0e0; border-radius: 4px;">
+                      <div><strong>槽位:</strong> {{ key }}</div>
+                      <div><strong>描述:</strong> {{ slot.text }}</div>
+                      <div><strong>条件:</strong>
+                        <div v-html="formatSlotCondition(slot.condition)"></div>
+                      </div>
+                    </div>
+                  </v-expansion-panel-content>
+                </v-expansion-panel>
+
+                <v-expansion-panel v-if="Object.keys(cardData.settlement_prior).length > 0">
+                  <v-expansion-panel-header>结算前信息</v-expansion-panel-header>
+                  <v-expansion-panel-content>
+                    <div v-for="(settlement, index) in cardData.settlement_prior" :key="'settlement-'+index"
+                      class="mb-4 pa-2" style="border: 1px solid #e0e0e0; border-radius: 4px;">
+                      <div><strong>条件:</strong>
+                        <div v-html="formatCondition(settlement.condition)"></div>
+                      </div>
+                      <div><strong>标题:</strong> {{ settlement.result_title }}</div>
+                      <div><strong>文本:</strong> {{ settlement.result_text }}</div>
+                      <div><strong>结果:</strong>
+                        <div v-html="formatResult(settlement.result)"></div>
+                      </div>
+                      <div><strong>动作:</strong>
+                        <div v-html="formatAction(settlement.action)"></div>
+                      </div>
+                    </div>
+                  </v-expansion-panel-content>
+                </v-expansion-panel>
+
+                <v-expansion-panel>
+                  <v-expansion-panel-header>结算信息</v-expansion-panel-header>
+                  <v-expansion-panel-content>
+                    <div v-for="(settlement, index) in cardData.settlement" :key="'settlement-'+index" class="mb-4 pa-2"
+                      style="border: 1px solid #e0e0e0; border-radius: 4px;">
+                      <div><strong>条件:</strong>
+                        <div v-html="formatCondition(settlement.condition)"></div>
+                      </div>
+                      <div><strong>标题:</strong> {{ settlement.result_title }}</div>
+                      <div><strong>文本:</strong> {{ settlement.result_text }}</div>
+                      <div><strong>结果:</strong>
+                        <div v-html="formatResult(settlement.result)"></div>
+                      </div>
+                      <div><strong>动作:</strong>
+                        <div v-html="formatAction(settlement.action)"></div>
+                      </div>
+                    </div>
+                  </v-expansion-panel-content>
+                </v-expansion-panel>
+
+                <v-expansion-panel v-if="Object.keys(cardData.settlement_extre).length > 0">
+                  <v-expansion-panel-header>结算后信息</v-expansion-panel-header>
+                  <v-expansion-panel-content>
+                    <div v-for="(settlement, index) in cardData.settlement_extre" :key="'settlement-'+index"
+                      class="mb-4 pa-2" style="border: 1px solid #e0e0e0; border-radius: 4px;">
+                      <div><strong>条件:</strong>
+                        <div v-html="formatCondition(settlement.condition)"></div>
+                      </div>
+                      <div><strong>标题:</strong> {{ settlement.result_title }}</div>
+                      <div><strong>文本:</strong> {{ settlement.result_text }}</div>
+                      <div><strong>结果:</strong>
+                        <div v-html="formatResult(settlement.result)"></div>
+                      </div>
+                      <div><strong>动作:</strong>
+                        <div v-html="formatAction(settlement.action)"></div>
+                      </div>
+                    </div>
+                  </v-expansion-panel-content>
+                </v-expansion-panel>
+              </v-expansion-panels>
+            </v-card-text>
+
+            <v-card-actions>
+              <v-btn color="primary" text @click="searchTrigger">
+                搜索来源
+              </v-btn>
+              <v-spacer></v-spacer>
+              <v-btn color="primary" text @click="showRawJson = !showRawJson">
+                {{ showRawJson ? '隐藏' : '查看' }}原始JSON
+              </v-btn>
+            </v-card-actions>
+
+            <v-expand-transition>
+              <div v-if="showRawJson">
+                <v-divider></v-divider>
+                <v-card-text>
+                  <pre class="overflow-auto" style="max-height: 500px">{{ JSON.stringify(cardData, null, 2) }}</pre>
+                </v-card-text>
+              </div>
+            </v-expand-transition>
+          </v-card>
+        </v-container>
+      </v-main>
+
+      <!-- 卡牌详情对话框 -->
+      <v-dialog v-model="detailDialog" max-width="600px">
+        <v-card v-if="selectedCard">
+          <v-card-title class="headline">
+            {{ selectedCard.name }}
+            <v-spacer></v-spacer>
+            <v-chip :color="getRarityColor(selectedCard.rare)">
+              {{ getRarityText(selectedCard.rare) }}
+            </v-chip>
+          </v-card-title>
+          <v-card-subtitle>{{ selectedCard.title }}</v-card-subtitle>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <p class="body-1">{{ selectedCard.text }}</p>
+                <v-divider class="my-3"></v-divider>
+              </v-col>
+
+              <v-col cols="12" v-if="Object.keys(selectedCard.tag).length > 0">
+                <h3 class="subtitle-1 font-weight-bold">标签</h3>
+                <v-chip-group column>
+                  <v-chip
+                    v-for="(value, tag) in selectedCard.tag"
+                    :key="tag"
+                    small
+                    class="card-tag"
+                  >
+                    {{ tag }}{{ value > 1 ? ': ' + value : '' }}
+                  </v-chip>
+                </v-chip-group>
+              </v-col>
+
+              <v-col cols="12" v-if="selectedCard.equips && selectedCard.equips.length > 0">
+                <h3 class="subtitle-1 font-weight-bold">可装备</h3>
+                <v-chip-group column>
+                  <v-chip
+                    v-for="equip in selectedCard.equips"
+                    :key="equip"
+                    small
+                    class="card-tag"
+                  >
+                    {{ equip }}
+                  </v-chip>
+                </v-chip-group>
+              </v-col>
+
+              <v-col cols="12">
+                <v-simple-table dense>
+                  <template v-slot:default>
+                    <tbody>
+                      <tr>
+                        <td>ID</td>
+                        <td>{{ selectedCard.id }}</td>
+                      </tr>
+                      <tr>
+                        <td>类型</td>
+                        <td>{{ getTypeText(selectedCard.type) }}</td>
+                      </tr>
+                      <tr>
+                        <td>资源路径</td>
+                        <td>{{ selectedCard.resource }}</td>
+                      </tr>
+                      <tr>
+                        <td>是否唯一</td>
+                        <td>{{ selectedCard.is_only ? '是' : '否' }}</td>
+                      </tr>
+                    </tbody>
+                  </template>
+                </v-simple-table>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn text @click="searchItem(selectedCard)">搜索相关事件</v-btn>
+            <v-btn text @click="searchItem(selectedCard, true)">搜索获取方式</v-btn>
+            <v-spacer></v-spacer>
+            <v-btn color="primary" text @click="detailDialog = false">关闭</v-btn>
+          </v-card-actions>
+          <v-card-text v-html="char_origin_html"></v-card-text>
+        </v-card>
+      </v-dialog>
+    </v-app>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    axios.defaults.baseURL = '/';
+    const cardData = //<<<card_data>>>//;
+     v = new Vue({
+        el: '#app',
+        vuetify: new Vuetify(),
+        data() {
+          return {
+            cardData: cardData,
+            showRawJson: false,
+            key_name_map: {},
+            cards: [],
+            selectedCard: null,
+            detailDialog: false,
+            char_origin_map: {},
+            char_origin_html: '',
+            globalSearch: ''
+          };
+        },
+        mounted() {
+          axios.get('key_name_map')
+            .then(response => {
+              this.key_name_map = response.data;
+            })
+            .catch(error => {
+              console.error('Error fetching key name map:', error);
+            });
+          axios.get('char_origin_map')
+            .then(response => {
+              this.char_origin_map = response.data;
+            })
+            .catch(error => {
+              console.error('Error fetching char origin map:', error);
+            });
+          axios.get('formatted/cards.json')
+            .then(response => {
+              this.cards = response.data;
+            })
+            .catch(error => {
+              console.error('Error fetching cards', error);
+            });
+          document.title = this.cardData.name + ' - 苏丹的数据库';
+        },
+        methods: {
+          doSearch() {
+            if (this.globalSearch) {
+              let searchQuery = this.globalSearch.trim().toLowerCase();
+              for (const key in this.key_name_map) {
+                if (this.key_name_map[key] === this.globalSearch) {
+                  searchQuery += ' ' + key;
+                }
+              }
+
+              window.open(`${axios.defaults.baseURL}search?q=${encodeURIComponent(searchQuery)}`, '_blank');
+            }
+          },
+          searchItem(card, isGet) {
+            if (!isGet) {
+              window.open(`${axios.defaults.baseURL}search?q=${card.id}`, '_blank');
+            }
+            else {
+              if (card.type === 'item') {
+                window.open(`${axios.defaults.baseURL}search?q="card": ${card.id}`, '_blank');
+              }
+              else if (card.type === 'char') {
+                if (this.char_origin_map[card.id]) {
+                  this.char_origin_html = '找到如下相关事件：' + this.tryGetName(this.char_origin_map[card.id])
+                }
+                else {
+                  window.open(`${axios.defaults.baseURL}search?q=${card.id}`, '_blank');
+                }
+              }
+              else if (card.type === 'sudan') {
+                window.open(`${axios.defaults.baseURL}search?q=${card.id}`, '_blank');
+              }
+            }
+          },
+          searchTrigger() {
+            if (this.cardData.id) {
+              window.open(`${axios.defaults.baseURL}search?q="rite": ${this.cardData.id}`, '_blank');
+            }
+          },
+          getTypeText(type) {
+            if (type === 'char') return '角色';
+            else if (type === 'item') return '物品';
+            else if (type === 'sudan') return '苏丹卡';
+          },
+          getRarityColor(rare) {
+            switch (rare) {
+              case 1: return 'grey';
+              case 2: return 'green';
+              case 3: return 'blue';
+              case 4: return 'yellow';
+              default: return 'grey';
+            }
+          },
+          getRarityText(rare) {
+            switch (rare) {
+              case 1: return '石';
+              case 2: return '铜';
+              case 3: return '银';
+              case 4: return '金';
+              default: return '未知';
+            }
+          },
+          selectCard(card_id) {
+            this.selectedCard = this.cards[card_id];
+            this.detailDialog = true;
+            this.char_origin_html = '';
+          },
+          formatText(text) {
+            // 处理文本中的颜色标签
+            if (text.includes('<color=')) {
+              return text.replace(/<color=#([A-Fa-f0-9]{6})>(.*?)<\/color>/g,
+                '<span style="color: #$1">$2</span>');
+            }
+            return text;
+          },
+          formatSlotCondition(condition) {
+            // 处理槽位条件文本
+            return this.getAllText('', condition);
+          },
+          formatCondition(condition) {
+            // 简单展示条件
+            return this.getAllText('', condition);
+          },
+          formatAction(action) {
+            // 简单展示动作
+            return this.getAllText('', action);
+          },
+          formatResult(result) {
+            // 简单展示结果
+            return this.getAllText('', result);
+          },
+          getAllText(prefix, obj) {
+            let text = '';
+            for (const key in obj) {
+              // Handle random rounds (e.g., r1:xxx)
+              if (key.match(/r\d+:/)) {
+                const reg = /r(\d+):(.+)/g;
+                const match = reg.exec(key);
+                if (match) {
+                  text += `随机轮 ${match[1]} : ${this.tryGetName(match[2])} ${obj[key][0]}<br>`;
+                }
+              }
+              // Handle force conditions (e.g., f:2-s2_智慧<=)
+              else if (key.startsWith('f:')) {
+                const keyText = key.replace('f:', '');
+                text += prefix + `${keyText}${obj[key]}<br>`;
+              }
+              // Handle slot conditions (e.g., s1_is)
+              else if (key.match(/^(s\d+)?_?(is|rare)(>=|<=|>|<|=)?/g)) {
+                const reg = /^(s\d+)?_?(is|rare)(>=|<=|>|<|=)?/g;
+                const match = reg.exec(key);
+                if (match[2] == 'is') {
+                  if (match && match[1]) {
+                    text += prefix + `${match[1]} 放入 ${this.tryGetName(obj[key])}<br>`;
+                  } else {
+                    text += prefix + `放入 ${this.tryGetName(obj[key])}<br>`;
+                  }
+                }
+                else if (match[2] == 'rare') {
+                  if (match && match[1]) {
+                    text += prefix + `${match[1]} 稀有度 ${match[3]}${obj[key]}<br>`;
+                  } else {
+                    text += prefix + `稀有度 ${match[3]}${obj[key]}<br>`;
+                  }
+                }
+              }
+              // Handle type key
+              else if (key === 'type') {
+                text += prefix + `类型等于 ${{ 'item': '物品', 'char': '角色', 'sudan': '苏丹卡' }[obj[key]]}<br>`;
+              }
+              // Handle counter-related keys
+              else if (key.startsWith('counter')) {
+                text += prefix + this.getCounterText(key, obj[key]) + '<br>';
+              }
+              // Handle rite key
+              else if (key === 'rite') {
+                text += prefix + `出现事件 ${this.tryGetName(obj[key])}<br>`;
+              }
+              else if (key === '!rite') {
+                text += prefix + `不存在事件 ${this.tryGetName(obj[key])}<br>`;
+              }
+              else if (key === 'clean_rite') {
+                text += prefix + `移除事件 ${this.tryGetName(obj[key])}<br>`;
+              }
+              // Handle prompt key
+              else if (key === 'prompt') {
+                text += prefix + this.getPromptText(key, obj[key]) + '<br>';
+              }
+              // Handle slot-related keys (e.g., s1+equip)
+              else if (key.match(/!?s(\d+)(\+|\-|\.|_|=)(.+)/g)) {
+                text += prefix + this.getSlotText(key, obj[key]) + '<br>';
+              }
+              // Handle event_on key
+              else if (key === 'event_on') {
+                text += prefix + `事件触发 ${this.tryGetName(obj[key])} 开始<br>`;
+              }
+              // Handle event_off key
+              else if (key === 'event_off') {
+                text += prefix + `事件触发 ${this.tryGetName(obj[key])} 结束<br>`;
+              }
+              // Handle card
+              else if (key === 'card') {
+                text += prefix + '卡牌：' + this.tryGetName(obj[key]) + '<br>';
+              }
+              // Handle clear_slot
+              else if (key.match(/clean_s(\d+)/g)) {
+                const reg = /clean_s(\d+)/g;
+                const match = reg.exec(key);
+                if (match) {
+                  text += prefix + `删除 s${match[1]}<br>`;
+                }
+              }
+              else if (key.match(/!?hand_have_(\d+)(>=|<=|>|<|=)?/g)) {
+                const reg = /!?hand_have_(\d+)(>=|<=|>|<|=)?/g;
+                const match = reg.exec(key);
+                if (match) {
+                  let suffix = '';
+                  if (match[2] !== undefined) {
+                    suffix = match[2] + obj[key];
+                  }
+                  if (key.startsWith('!')) {
+                    text += prefix + `手牌中不存在 ${this.tryGetName(match[1])}${suffix}<br>`;
+                  } else {
+                    text += prefix + `手牌中存在 ${this.tryGetName(match[1])}${suffix}<br>`;
+                  }
+                }
+              }
+              else if (key.match(/!?(table_)?have_/g)) {
+                const reg = /!?(table_)?have_(.+)/g;
+                const match = reg.exec(key);
+                if (match) {
+                  if (key.startsWith('!')) {
+                    text += prefix + `不存在 ${this.tryGetName(match[2])}<br>`;
+                  } else {
+                    text += prefix + `存在 ${this.tryGetName(match[2])}<br>`;
+                  }
+                }
+              }
+              // Handle over key
+              else if (key === 'over') {
+                text += prefix + `游戏结束，结局 ${obj[key]}<br>`;
+              }
+              // Handle nested objects or arrays
+              else {
+                const keyText = function (key) {
+                  if (key === 'all') return '满足所有';
+                  if (key === 'any') return '满足任一';
+                  return key;
+                };
+                if (typeof obj[key] === 'object') {
+                  text += prefix + `${keyText(key)} : <br>`;
+                  text += this.getAllText(prefix + '--', obj[key]);
+                } else {
+                  text += prefix + `${key} : ${obj[key]}<br>`;
+                }
+              }
+            }
+            return text;
+          },
+          tryGetName(id) {
+            if (Array.isArray(id)) {
+              return id.map(item => this.tryGetName(item)).join('，');
+            }
+            // 尝试获取名称
+            let prefix = '';
+            let suffix = '';
+            const num = parseInt(id);
+            if (num >= 2000000 && num < 3000000) {
+              prefix = `<a onclick="v.selectCard(${num})" target="_blank">`;
+              suffix = '</a>';
+            }
+            if (num >= 5000000 && num < 5300000) {
+              prefix = '<a href="/config/rite/' + id + '.json" target="_blank">';
+              suffix = '</a>';
+            }
+            if (num >= 5300000 && num < 6000000) {
+              prefix = '<a href="/config/event/' + id + '.json" target="_blank">';
+              suffix = '</a>';
+            }
+            return prefix + (this.key_name_map[id] || id) + suffix;
+          },
+          getCounterText(key, val) {
+            // 处理计数器文本
+            const reg = /((global_)?counter)(\+|-|\.|_|=)(\d+)(>=|<=|>|<|=)?/g;
+            const match = reg.exec(key);
+            if (match) {
+              return `计数器 ${this.tryGetName(match[4])}(${match[4]}) ${(match[3] === '_' || match[3] === undefined) ? '' : match[3]} ${match[5] || ''} ${val}`;
+            }
+            return key;
+          },
+          getSlotText(key, val) {
+            const reg = /!?s(\d+)(\+|\-|\.|_|=)(.+)/g;
+            let prefix = key[0] === '!' ? '非 ' : '';
+            const match = reg.exec(key);
+            if (match) {
+              if (match[2] == '_') {
+                return prefix + `s${match[1]} ${match[3]} : ${this.tryGetName(val)}`;
+              }
+              if (match[2] == '+') {
+                if (match[3] == 'equip') {
+                  return prefix + `s${match[1]} 获得 ${this.tryGetName(val)}`;
+                }
+                return prefix + `s${match[1]} ${match[3]} + ${val}`;
+              }
+              if (match[2] == '-') {
+                return prefix + `s${match[1]} ${match[3]} - ${val}`;
+              }
+              if (match[2] == '=') {
+                return prefix + `s${match[1]} ${match[3]} = ${val}`;
+              }
+            }
+            return key;
+          },
+          getPromptText(key, val) {
+            return `文本：${val.text}`
+          },
+        }
+      });
+  </script>
+</body>
+
+</html>

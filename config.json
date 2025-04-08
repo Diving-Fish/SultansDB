@@ -1,0 +1,10 @@
+{
+    "inited": false,
+    "elasticsearch": {
+        "host": "localhost",
+        "port": 9200,
+        "index": "sultansDB"
+    },
+    "port": 8095,
+    "baseURL": "/"
+}

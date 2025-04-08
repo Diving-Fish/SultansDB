@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <title>搜索 - 苏丹的数据库</title>
+</head>
+<body>
+  <div id="app">
+    <v-app>
+      <v-main>
+        <v-container>
+          <v-row justify="center">
+            <v-col cols="12" sm="8" md="6">
+              <h1 class="text-center mb-6">搜索事件、仪式和战利品</h1>
+              
+              <!-- 搜索框 -->
+              <v-card elevation="2" class="mb-6">
+                <v-card-text>
+                  <v-text-field
+                    v-model="searchQuery"
+                    label="请输入搜索内容"
+                    prepend-inner-icon="mdi-magnify"
+                    clearable
+                    hide-details
+                    @keyup.enter="search"
+                  ></v-text-field>
+                </v-card-text>
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="primary" @click="search">
+                    搜索
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+              
+              <!-- 搜索结果 -->
+              <v-card v-if="searchPerformed">
+                <v-card-title>
+                  搜索结果
+                  <v-spacer></v-spacer>
+                  <div class="subtitle-1">找到 {{ searchResult.total }} 条结果</div>
+                </v-card-title>
+                
+                <v-divider></v-divider>
+                
+                <v-list v-if="searchResult.results.length > 0">
+                  <v-list-item
+                    v-for="(item, index) in searchResult.results"
+                    :key="index"
+                    @click="selectItem(item)"
+                  >
+                    <v-list-item-content>
+                      <v-list-item-title>{{ item.name }} - {{ item.file_path }}</v-list-item-title>
+                      <v-list-item-subtitle v-for="text in item.highlights" v-html="text"></v-list-item-subtitle>
+                    </v-list-item-content>
+                  </v-list-item>
+                </v-list>
+                
+                <v-card-text v-else class="text-center pa-5">
+                  <v-icon x-large color="grey lighten-1">mdi-emoticon-sad-outline</v-icon>
+                  <div class="mt-3 grey--text">没有找到相关结果</div>
+                </v-card-text>
+                
+                <!-- 分页导航 -->
+                <v-card-actions v-if="searchResult.total > 0">
+                  <v-pagination
+                    v-model="currentPage"
+                    :length="searchResult.pages || 1"
+                    :total-visible="7"
+                    @input="handlePageChange"
+                  ></v-pagination>
+                </v-card-actions>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-main>
+    </v-app>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    axios.defaults.baseURL = '/';
+    new Vue({
+      el: '#app',
+      vuetify: new Vuetify(),
+      data: {
+        searchQuery: '',
+        searchPerformed: false,
+        searchResult: {"results":[],"total":0,"page":1,"size":10,"pages":0},
+        currentPage: 1,
+        pageSize: 10
+      },
+      mounted() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const query = urlParams.get('q');
+        const page = urlParams.get('page');
+        
+        if (query) {
+          this.searchQuery = query;
+          if (page) {
+            this.currentPage = parseInt(page);
+          }
+          this.search();
+        }
+      },
+      methods: {
+        async search() {
+          const url = `search_api?q=${encodeURIComponent(this.searchQuery)}&page=${this.currentPage}&size=${this.pageSize}`;
+          
+          try {
+            const response = await axios.get(url);
+            this.searchResult = response.data;
+            this.searchPerformed = true;
+            
+            // 更新 URL 参数以便分享和刷新
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('q', this.searchQuery);
+            urlParams.set('page', this.currentPage);
+            const newUrl = window.location.pathname + '?' + urlParams.toString();
+            history.pushState(null, '', newUrl);
+          } catch (error) {
+            console.error('搜索请求失败:', error);
+          }
+        },
+        handlePageChange(page) {
+          this.currentPage = page;
+          this.search();
+        },
+        selectItem(item) {
+          window.open(`${axios.defaults.baseURL}${item.file_path}`, '_blank');
+        }
+      }
+    })
+  </script>
+</body>
+</html>

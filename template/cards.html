@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>卡牌一览 - 苏丹的数据库</title>
+  <!-- Vuetify CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <!-- Material Design Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <style>
+    .card-image {
+      height: 120px;
+      background-color: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-tag {
+      margin-right: 4px;
+      margin-bottom: 4px;
+    }
+    .card-item {
+      transition: transform 0.2s;
+    }
+    .card-item:hover {
+      transform: translateY(-5px);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <v-app>
+      <v-app-bar app color="primary" dark>
+        <v-toolbar-title>卡牌一览</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-text-field
+          v-model="globalSearch"
+          append-icon="mdi-magnify"
+          label="全站搜索"
+          single-line
+          hide-details
+          class="ml-2"
+          @click:append="doSearch"
+          @keyup.enter="doSearch"
+        ></v-text-field>
+      </v-app-bar>
+
+      <v-main>
+        <v-container fluid>
+          <v-row>
+            <v-col cols="12">
+              <v-card>
+                <v-card-title>
+                  筛选器
+                  <v-spacer></v-spacer>
+                  <v-text-field
+                    v-model="search"
+                    append-icon="mdi-magnify"
+                    label="搜索"
+                    single-line
+                    hide-details
+                    outlined
+                    dense
+                    class="ml-2"
+                  ></v-text-field>
+                </v-card-title>
+                <v-card-text>
+                  <v-row>
+                    <v-col cols="12" sm="6" md="3">
+                      <v-select
+                        v-model="typeFilter"
+                        :items="typeOptions"
+                        label="卡牌类型"
+                        outlined
+                        dense
+                        clearable
+                      ></v-select>
+                    </v-col>
+                    <v-col cols="12" sm="6" md="3">
+                      <v-select
+                        v-model="rarityFilter"
+                        :items="rarityOptions"
+                        label="稀有度"
+                        outlined
+                        dense
+                        clearable
+                      ></v-select>
+                    </v-col>
+                    <v-col cols="12" sm="6" md="3">
+                      <v-select
+                        v-model="tagFilter"
+                        :items="tagOptions"
+                        label="标签"
+                        outlined
+                        dense
+                        clearable
+                      ></v-select>
+                    </v-col>
+                    <v-col cols="12" sm="6" md="3">
+                      <v-btn
+                        color="primary"
+                        block
+                        @click="resetFilters"
+                      >
+                        重置筛选器
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12">
+              <v-card>
+                <v-card-title>
+                  卡牌列表
+                  <v-spacer></v-spacer>
+                  <v-btn icon @click="currentPage > 1 && currentPage--">
+                    <v-icon>mdi-chevron-left</v-icon>
+                  </v-btn>
+                  <v-chip>第 {{ currentPage }} 页 / 共 {{ Math.ceil(this.filteredCards.length / 40) }} 页</v-chip>
+                  <v-btn icon @click="currentPage < Math.ceil(filteredCards.length / itemsPerPage) && currentPage++">
+                    <v-icon>mdi-chevron-right</v-icon>
+                  </v-btn>
+                </v-card-title>
+                <v-card-text>
+                  <v-row>
+                    <v-col
+                      v-for="(card, id) in displayedCards"
+                      :key="id"
+                      cols="12" sm="6" md="4" lg="3"
+                    >
+                      <v-card
+                        class="mx-auto card-item"
+                        :elevation="2"
+                        @click="selectCard(card)"
+                      >
+                        <v-card-title>
+                          {{ card.name }}
+                          <v-spacer></v-spacer>
+                          <v-chip
+                            small
+                            :color="getRarityColor(card.rare)"
+                          >
+                            {{ getRarityText(card.rare) }}
+                          </v-chip>
+                        </v-card-title>
+                        <v-card-subtitle>{{ card.title }}</v-card-subtitle>
+                        <v-card-text>
+                          <v-chip-group column>
+                            <v-chip
+                              v-for="(value, tag) in card.tag"
+                              :key="tag"
+                              x-small
+                              class="card-tag"
+                            >
+                              {{ tag }} {{value }}
+                            </v-chip>
+                          </v-chip-group>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-main>
+
+      <!-- 卡牌详情对话框 -->
+      <v-dialog v-model="detailDialog" max-width="600px">
+        <v-card v-if="selectedCard">
+          <v-card-title class="headline">
+            {{ selectedCard.name }}
+            <v-spacer></v-spacer>
+            <v-chip :color="getRarityColor(selectedCard.rare)">
+              {{ getRarityText(selectedCard.rare) }}
+            </v-chip>
+          </v-card-title>
+          <v-card-subtitle>{{ selectedCard.title }}</v-card-subtitle>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <p class="body-1">{{ selectedCard.text }}</p>
+                <v-divider class="my-3"></v-divider>
+              </v-col>
+
+              <v-col cols="12" v-if="Object.keys(selectedCard.tag).length > 0">
+                <h3 class="subtitle-1 font-weight-bold">标签</h3>
+                <v-chip-group column>
+                  <v-chip
+                    v-for="(value, tag) in selectedCard.tag"
+                    :key="tag"
+                    small
+                    class="card-tag"
+                  >
+                    {{ tag }}{{ value > 1 ? ': ' + value : '' }}
+                  </v-chip>
+                </v-chip-group>
+              </v-col>
+
+              <v-col cols="12" v-if="selectedCard.equips && selectedCard.equips.length > 0">
+                <h3 class="subtitle-1 font-weight-bold">可装备</h3>
+                <v-chip-group column>
+                  <v-chip
+                    v-for="equip in selectedCard.equips"
+                    :key="equip"
+                    small
+                    class="card-tag"
+                  >
+                    {{ equip }}
+                  </v-chip>
+                </v-chip-group>
+              </v-col>
+
+              <v-col cols="12">
+                <v-simple-table dense>
+                  <template v-slot:default>
+                    <tbody>
+                      <tr>
+                        <td>ID</td>
+                        <td>{{ selectedCard.id }}</td>
+                      </tr>
+                      <tr>
+                        <td>类型</td>
+                        <td>{{ getTypeText(selectedCard.type) }}</td>
+                      </tr>
+                      <tr>
+                        <td>资源路径</td>
+                        <td>{{ selectedCard.resource }}</td>
+                      </tr>
+                      <tr>
+                        <td>是否唯一</td>
+                        <td>{{ selectedCard.is_only ? '是' : '否' }}</td>
+                      </tr>
+                    </tbody>
+                  </template>
+                </v-simple-table>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn text @click="searchItem(selectedCard)">搜索相关事件</v-btn>
+            <v-btn text @click="searchItem(selectedCard, true)">搜索获取方式</v-btn>
+            <v-spacer></v-spacer>
+            <v-btn color="primary" text @click="detailDialog = false">关闭</v-btn>
+          </v-card-actions>
+          <v-card-text v-html="char_origin_html"></v-card-text>
+        </v-card>
+      </v-dialog>
+
+    </v-app>
+  </div>
+
+  <!-- Vue & Vuetify & Axios -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+  <script>
+    axios.defaults.baseURL = '/';
+    new Vue({
+      el: '#app',
+      vuetify: new Vuetify({
+        theme: {
+          dark: localStorage.getItem('darkMode') === 'true',
+        }
+      }),
+      data: {
+        cards: {},
+        search: '',
+        currentPage: 1,
+        itemsPerPage: 40,
+        typeFilter: null,
+        rarityFilter: null,
+        tagFilter: null,
+        detailDialog: false,
+        selectedCard: null,
+        darkMode: localStorage.getItem('darkMode') === 'true',
+        loading: true,
+        key_name_map: {},
+        char_origin_map: {},
+        char_origin_html: '',
+        globalSearch: ''
+      },
+      computed: {
+        typeOptions() {
+          const types = new Set();
+          for (const id in this.cards) {
+            const card = this.cards[id];
+            if (card.type) {
+              types.add(card.type);
+            }
+          }
+          return Array.from(types).map(type => {
+            return {
+              text: this.getTypeText(type),
+              value: type
+            };
+          });
+        },
+        rarityOptions() {
+          const rarities = new Set();
+          for (const id in this.cards) {
+            const card = this.cards[id];
+            if (card.rare) {
+              rarities.add(card.rare);
+            }
+          }
+          return Array.from(rarities).sort((a, b) => a - b).map(rare => {
+            return {
+              text: this.getRarityText(rare),
+              value: rare
+            };
+          });
+        },
+        tagOptions() {
+          const tags = new Set();
+          for (const id in this.cards) {
+            const card = this.cards[id];
+            if (card.tag) {
+              for (const tag in card.tag) {
+                tags.add(tag);
+              }
+            }
+          }
+          return Array.from(tags).sort();
+        },
+        filteredCards() {
+          const result = {};
+
+          for (const id in this.cards) {
+            const card = this.cards[id];
+
+            // 搜索过滤
+            if (this.search && !this.matchSearch(card, this.search)) {
+              continue;
+            }
+
+            // 类型过滤
+            if (this.typeFilter && card.type !== this.typeFilter) {
+              continue;
+            }
+
+            // 稀有度过滤
+            if (this.rarityFilter && card.rare !== this.rarityFilter) {
+              continue;
+            }
+
+            // 标签过滤
+            if (this.tagFilter && (!card.tag || !card.tag[this.tagFilter])) {
+              continue;
+            }
+
+            result[id] = card;
+          }
+
+          return Object.values(result).sort((a, b) => {
+            // 先按稀有度排序（从高到低）
+            if (b.rare !== a.rare) {
+              return b.rare - a.rare;
+            }
+            // 再按 ID 排序
+            return a.id - b.id;
+          });
+        },
+        displayedCards() {
+          const start = (this.currentPage - 1) * this.itemsPerPage;
+          const end = start + this.itemsPerPage;
+          return this.filteredCards.slice(start, end);
+        },
+      },
+      watch: {
+        filteredCards(newCards) {
+          this.currentPage = Math.max(1, Math.min(this.currentPage, Math.ceil(newCards.length / this.itemsPerPage)));
+        },
+      },
+      created() {
+        this.loadCards();
+        axios.get('key_name_map')
+          .then(response => {
+            this.key_name_map = response.data;
+          })
+          .catch(error => {
+            console.error('Error fetching key name map:', error);
+          });
+
+        axios.get('char_origin_map')
+          .then(response => {
+            this.char_origin_map = response.data;
+          })
+          .catch(error => {
+            console.error('Error fetching char origin map:', error);
+          });
+      },
+      methods: {
+        doSearch() {
+          if (this.globalSearch) {
+            let searchQuery = this.globalSearch.trim().toLowerCase();
+            for (const key in this.key_name_map) {
+              if (this.key_name_map[key] === this.globalSearch) {
+                searchQuery += ' ' + key;
+              }
+            }
+
+            window.open(`${axios.defaults.baseURL}search?q=${encodeURIComponent(searchQuery)}`, '_blank');
+          }
+        },
+        searchItem(card, isGet) {
+          if (!isGet) {
+            window.open(`${axios.defaults.baseURL}search?q=${card.id}`, '_blank');
+          }
+          else {
+            if (card.type === 'item') {
+              window.open(`${axios.defaults.baseURL}search?q="card": ${card.id}`, '_blank');
+            }
+            else if (card.type === 'char') {
+              if (this.char_origin_map[card.id]) {
+                this.char_origin_html = '找到如下相关事件：' + this.tryGetName(this.char_origin_map[card.id])
+              }
+              else {
+                window.open(`${axios.defaults.baseURL}search?q=${card.id}`, '_blank');
+              }
+            }
+            else if (card.type === 'sudan') {
+              window.open(`${axios.defaults.baseURL}search?q=${card.id}`, '_blank');
+            }
+          }
+        },
+        getTypeText(type) {
+          if (type === 'char') return '角色';
+          else if (type === 'item') return '物品';
+          else if (type === 'sudan') return '苏丹卡';
+        },
+        async loadCards() {
+          this.loading = true;
+          try {
+            const response = await axios.get('formatted/cards.json');
+            this.cards = response.data;
+          } catch (error) {
+            console.error('加载卡牌数据失败:', error);
+            alert('加载卡牌数据失败，请刷新页面重试');
+          } finally {
+            this.loading = false;
+          }
+        },
+        matchSearch(card, query) {
+          query = query.toLowerCase();
+
+          // 检查名称、标题和描述
+          if (card.name && card.name.toLowerCase().includes(query)) return true;
+          if (card.title && card.title.toLowerCase().includes(query)) return true;
+          if (card.text && card.text.toLowerCase().includes(query)) return true;
+
+          // 检查标签
+          if (card.tag) {
+            for (const tag in card.tag) {
+              if (tag.toLowerCase().includes(query)) return true;
+            }
+          }
+
+          return false;
+        },
+        tryGetName(id) {
+          if (Array.isArray(id)) {
+            return id.map(item => this.tryGetName(item)).join('，');
+          }
+          // 尝试获取名称
+          let prefix = '';
+          let suffix = '';
+          const num = parseInt(id);
+          if (num >= 2000000 && num < 3000000) {
+            prefix = `<a onclick="v.selectCard(${num})" target="_blank">`;
+            suffix = '</a>';
+          }
+          if (num >= 5000000 && num < 5300000) {
+            prefix = '<a href="/config/rite/' + id + '.json" target="_blank">';
+            suffix = '</a>';
+          }
+          if (num >= 5300000 && num < 6000000) {
+            prefix = '<a href="/config/event/' + id + '.json" target="_blank">';
+            suffix = '</a>';
+          }
+          return prefix + (this.key_name_map[id] || id) + suffix;
+        },
+        getRarityColor(rare) {
+          switch (rare) {
+            case 1: return 'grey';
+            case 2: return 'green';
+            case 3: return 'blue';
+            case 4: return 'yellow';
+            default: return 'grey';
+          }
+        },
+        getRarityText(rare) {
+          switch (rare) {
+            case 1: return '石';
+            case 2: return '铜';
+            case 3: return '银';
+            case 4: return '金';
+            default: return '未知';
+          }
+        },
+        selectCard(card) {
+          this.selectedCard = card;
+          this.detailDialog = true;
+          this.char_origin_html = '';
+        },
+        resetFilters() {
+          this.search = '';
+          this.typeFilter = null;
+          this.rarityFilter = null;
+          this.tagFilter = null;
+        },
+        toggleTheme() {
+          this.darkMode = !this.darkMode;
+          localStorage.setItem('darkMode', this.darkMode);
+          this.$vuetify.theme.dark = this.darkMode;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
