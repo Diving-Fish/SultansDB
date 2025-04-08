@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="title"> - 苏丹的数据库</title>
   <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <link href="https://unpkg.zhimg.com/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
 </head>
 
 <body>
@@ -239,9 +239,9 @@
     </v-app>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.zhimg.com/vue@2.x/dist/vue.js"></script>
+  <script src="https://unpkg.zhimg.com/vuetify@2.x/dist/vuetify.js"></script>
+  <script src="https://unpkg.zhimg.com/axios/dist/axios.min.js"></script>
   <script>
     axios.defaults.baseURL = '/';
     const cardData = //<<<card_data>>>//;
@@ -517,11 +517,11 @@
               suffix = '</a>';
             }
             if (num >= 5000000 && num < 5300000) {
-              prefix = '<a href="/config/rite/' + id + '.json" target="_blank">';
+              prefix = `<a href="${axios.defaults.baseURL}config/rite/` + id + '.json" target="_blank">';
               suffix = '</a>';
             }
             if (num >= 5300000 && num < 6000000) {
-              prefix = '<a href="/config/event/' + id + '.json" target="_blank">';
+              prefix = `<a href="${axios.defaults.baseURL}config/event/` + id + '.json" target="_blank">';
               suffix = '</a>';
             }
             return prefix + (this.key_name_map[id] || id) + suffix;

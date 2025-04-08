@@ -3,7 +3,7 @@
     "elasticsearch": {
         "host": "localhost",
         "port": 9200,
-        "index": "sultansDB"
+        "index": "sultansdb"
     },
     "port": 8095,
     "baseURL": "/"
