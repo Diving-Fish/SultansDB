@@ -44,8 +44,7 @@
 
               <div v-if="eventData.on">
                 <h3>触发时机</h3>
-                <p v-for="(value, key) in eventData.on" :key="key">
-                  {{ Array.isArray(value) ? value.join('-') : value }} 回合后
+                <p v-for="(value, key) in eventData.on" :key="key" v-html="getConditionOn(key, value)">
                 </p>
               </div>
 
@@ -265,6 +264,15 @@
           searchTrigger() {
             if (this.eventData.id) {
               window.open(`${axios.defaults.baseURL}search?q="event_on": ${this.eventData.id}`, '_blank');
+            }
+          },
+          getConditionOn(key, value) {
+            console.log(key, value);
+            if (key == "round_begin_ba") {
+              return `${Array.isArray(value) ? value.join('-') : value} 回合后`
+            }
+            else if (key == "rite_end") {
+              return `${this.tryGetName(value)} 结束后`
             }
           },
           getTypeText(type) {
