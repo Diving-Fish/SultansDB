@@ -254,14 +254,14 @@ async def serve_formatted_file(file_path: str):
         # 获取文件最后修改时间，用于ETag和Last-Modified
         file_mtime = os.path.getmtime(abs_path)
         etag = hashlib.md5(f"{file_path}:{file_mtime}".encode()).hexdigest()
-        last_modified = datetime.utcfromtimestamp(file_mtime).strftime('%a, %d %b %Y %H:%M:%S GMT')
+        # last_modified = datetime.utcfromtimestamp(file_mtime).strftime('%a, %d %b %Y %H:%M:%S GMT')
         
         response = await send_file(abs_path)
         
         # 添加缓存控制头
         response.headers['Cache-Control'] = f'public, max-age={STATIC_CACHE_TIMEOUT}'
         response.headers['ETag'] = etag
-        response.headers['Last-Modified'] = last_modified
+        # response.headers['Last-Modified'] = last_modified
         
         return response
         
