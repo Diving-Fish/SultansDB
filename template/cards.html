@@ -88,14 +88,35 @@
                       ></v-select>
                     </v-col>
                     <v-col cols="12" sm="6" md="3">
-                      <v-select
-                        v-model="tagFilter"
+                      <v-combobox
+                        v-model="tagFilters"
                         :items="tagOptions"
                         label="标签"
+                        multiple
+                        chips
+                        small-chips
+                        deletable-chips
                         outlined
                         dense
                         clearable
-                      ></v-select>
+                      >
+                        <template v-slot:selection="{ item, index }">
+                          <v-chip
+                            v-if="index < 3"
+                            small
+                            close
+                            @click:close="removeTag(item)"
+                          >
+                            {{ item }}
+                          </v-chip>
+                          <span
+                            v-if="index === 3"
+                            class="grey--text caption"
+                          >
+                            +{{ tagFilters.length - 3 }} 更多
+                          </span>
+                        </template>
+                      </v-combobox>
                     </v-col>
                     <v-col cols="12" sm="6" md="3">
                       <v-btn
@@ -277,7 +298,7 @@
         itemsPerPage: 40,
         typeFilter: null,
         rarityFilter: null,
-        tagFilter: null,
+        tagFilters: [], // 修改为数组类型以支持多选
         detailDialog: false,
         selectedCard: null,
         darkMode: localStorage.getItem('darkMode') === 'true',
@@ -351,9 +372,20 @@
               continue;
             }
 
-            // 标签过滤
-            if (this.tagFilter && (!card.tag || !card.tag[this.tagFilter])) {
-              continue;
+            // 标签过滤 (多选版本)
+            if (this.tagFilters.length > 0) {
+              // 只有当卡牌同时具有所有选中标签时才通过过滤
+              if (!card.tag) continue;
+              
+              let hasAllTags = true;
+              for (const tag of this.tagFilters) {
+                if (!card.tag[tag]) {
+                  hasAllTags = false;
+                  break;
+                }
+              }
+              
+              if (!hasAllTags) continue;
             }
 
             result[id] = card;
@@ -520,6 +552,10 @@
           this.darkMode = !this.darkMode;
           localStorage.setItem('darkMode', this.darkMode);
           this.$vuetify.theme.dark = this.darkMode;
+        },
+        removeTag(tag) {
+          const index = this.tagFilters.indexOf(tag);
+          if (index >= 0) this.tagFilters.splice(index, 1);
         }
       }
     });
