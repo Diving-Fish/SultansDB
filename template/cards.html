@@ -32,6 +32,11 @@
   <div id="app">
     <v-app>
       <v-app-bar app color="primary" dark>
+        <a :href="baseURL" class="mr-2">
+          <v-btn icon>
+            <v-icon>mdi-home</v-icon>
+          </v-btn>
+        </a>
         <v-toolbar-title>卡牌一览</v-toolbar-title>
         <a style="margin-left: 16px; padding-top: 6px" href="https://github.com/Diving-Fish/SultansDB"><img src="https://img.shields.io/github/stars/Diving-Fish/SultansDB?style=social"></a>
         <v-spacer></v-spacer>
@@ -310,6 +315,9 @@
         globalSearch: ''
       },
       computed: {
+        baseURL() {
+          return axios.defaults.baseURL;
+        },
         typeOptions() {
           const types = new Set();
           for (const id in this.cards) {

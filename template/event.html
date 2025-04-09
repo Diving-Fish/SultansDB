@@ -13,6 +13,11 @@
   <div id="app">
     <v-app>
       <v-app-bar app color="primary" dark>
+        <a :href="baseURL" class="mr-2">
+          <v-btn icon>
+            <v-icon>mdi-home</v-icon>
+          </v-btn>
+        </a>
         <v-toolbar-title>事件触发</v-toolbar-title>
         <a style="margin-left: 16px; padding-top: 6px" href="https://github.com/Diving-Fish/SultansDB"><img src="https://img.shields.io/github/stars/Diving-Fish/SultansDB?style=social"></a>
         <v-spacer></v-spacer>
@@ -75,9 +80,11 @@
             </v-card-text>
 
             <v-card-actions>
-              <v-btn color="primary" text @click="searchTrigger">
-                搜索来源
-              </v-btn>
+              <a :href="triggerURL">
+                <v-btn color="primary" text>
+                  搜索来源
+                </v-btn>
+              </a>
               <v-spacer></v-spacer>
               <v-btn color="primary" text @click="showRawJson = !showRawJson">
                 {{ showRawJson ? '隐藏' : '查看' }}原始JSON
@@ -228,6 +235,17 @@
             });
           document.title = this.eventData.text + ' - 苏丹的数据库';
         },
+        computed: {
+          baseURL() {
+            return axios.defaults.baseURL;
+          },
+          triggerURL() {
+            if (this.eventData.id) {
+              return `${axios.defaults.baseURL}search?q=${this.eventData.id}`;
+            }
+            return window.location.href;
+          },
+        },
         methods: {
           doSearch() {
             if (this.globalSearch) {
@@ -260,11 +278,6 @@
               else if (card.type === 'sudan') {
                 window.open(`${axios.defaults.baseURL}search?q=${card.id}`, '_blank');
               }
-            }
-          },
-          searchTrigger() {
-            if (this.eventData.id) {
-              window.location.href = `${axios.defaults.baseURL}search?q="event_on": ${this.eventData.id}`;
             }
           },
           getConditionOn(key, value) {
