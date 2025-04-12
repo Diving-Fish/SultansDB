@@ -486,14 +486,22 @@
                   }
                 }
               }
-              else if (key.match(/!?(table_)?have_/g)) {
-                const reg = /!?(table_)?have_(.+)/g;
+              else if (key.match(/!?(table_)?have_(\d+)(_?)(.*)/g)) {
+                const reg = /!?(table_)?have_(\d+)(_?)(.*)/g;
                 const match = reg.exec(key);
                 if (match) {
                   if (key.startsWith('!')) {
-                    text += prefix + `不存在 ${this.tryGetName(match[2])}<br>`;
+                    if (match[3]) {
+                      text += prefix + `非 ${this.tryGetName(match[2])} ${match[4]} ${obj[key]}<br>`;
+                    } else {
+                      text += prefix + `不存在 ${this.tryGetName(match[2])}<br>`;
+                    }
                   } else {
-                    text += prefix + `存在 ${this.tryGetName(match[2])}<br>`;
+                    if (match[3]) {
+                      text += prefix + `${this.tryGetName(match[2])} ${match[4]} ${obj[key]}<br>`;
+                    } else {
+                      text += prefix + `存在 ${this.tryGetName(match[2])}<br>`;
+                    }
                   }
                 }
               }
@@ -519,6 +527,15 @@
             return text;
           },
           tryGetName(id) {
+            try {
+              const obj = JSON.parse(id.replace(/'/g, '"'));
+              if (Array.isArray(obj)) {
+                return obj.map(item => this.tryGetName(item)).join('，');
+              }
+            }
+            catch (e) {
+              // 不是JSON格式，继续处理
+            }
             if (Array.isArray(id)) {
               return id.map(item => this.tryGetName(item)).join('，');
             }

@@ -467,6 +467,15 @@
             return text;
           },
           tryGetName(id) {
+            try {
+              const obj = JSON.parse(id.replace(/'/g, '"'));
+              if (Array.isArray(obj)) {
+                return obj.map(item => this.tryGetName(item)).join('，');
+              }
+            }
+            catch (e) {
+              // 不是JSON格式，继续处理
+            }
             if (Array.isArray(id)) {
               return id.map(item => this.tryGetName(item)).join('，');
             }
