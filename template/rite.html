@@ -299,7 +299,7 @@
           },
           triggerURL() {
             if (this.cardData.id) {
-              return `${axios.defaults.baseURL}search?q=${this.cardData.id}`;
+              return `${axios.defaults.baseURL}search?q=${encodeURI('"rite":' + this.cardData.id)}&phrase=1`;
             }
             return window.location.href;
           },

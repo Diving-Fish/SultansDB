@@ -28,6 +28,7 @@
                   ></v-text-field>
                 </v-card-text>
                 <v-card-actions>
+                  <v-checkbox v-model="matchPhrase" label="精确匹配" style="margin-top: 0; padding-top: 0; margin-left: 8px" hide-details></v-checkbox>
                   <v-spacer></v-spacer>
                   <v-btn color="primary" @click="search">
                     搜索
@@ -93,15 +94,20 @@
         searchPerformed: false,
         searchResult: {"results":[],"total":0,"page":1,"size":10,"pages":0},
         currentPage: 1,
-        pageSize: 10
+        pageSize: 10,
+        matchPhrase: false
       },
       mounted() {
         const urlParams = new URLSearchParams(window.location.search);
         const query = urlParams.get('q');
         const page = urlParams.get('page');
+        const phrase = urlParams.get('phrase');
         
         if (query) {
           this.searchQuery = query;
+          if (phrase) {
+            this.matchPhrase = phrase !== 0;
+          }
           if (page) {
             this.currentPage = parseInt(page);
           }
@@ -110,7 +116,7 @@
       },
       methods: {
         async search() {
-          const url = `search_api?q=${encodeURIComponent(this.searchQuery)}&page=${this.currentPage}&size=${this.pageSize}`;
+          const url = `search_api?q=${encodeURIComponent(this.searchQuery)}&page=${this.currentPage}&size=${this.pageSize}&phrase=${this.matchPhrase ? 1 : 0}`;
           
           try {
             const response = await axios.get(url);

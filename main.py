@@ -17,7 +17,7 @@ inited = config.get('inited', False)
 elasticsearch = config.get('elasticsearch', {
     "host": "localhost",
     "port": 9200,
-    "index": "sultansDB"
+    "index": "sultansdb"
 })
 baseURL = config.get('baseURL', '/')
 
@@ -124,20 +124,30 @@ async def search():
 async def search_api():
     """搜索 JSON 文件内容"""
     query_text = request.args.get('q', '')
+    phrase = request.args.get('phrase', 0, type=int)
     page = request.args.get('page', 1, type=int)
     size = request.args.get('size', 20, type=int)
     if not query_text:
         return jsonify({'error': 'Missing query parameter "q"'}), 400
 
+    if phrase:
+        qbody = {
+            'match_phrase': {
+                'content': query_text,
+            }
+        }
+    else:
+        qbody = {
+            'match': {
+                'content': query_text
+            },
+        }
+
     # 搜索文档
     result = await es_client.search(
         index=INDEX_NAME,
         body={
-            'query': {
-                'match': {
-                    'content': query_text
-                },
-            },
+            'query': qbody,
             'highlight': {
                 'fields': {
                     'content': {}
