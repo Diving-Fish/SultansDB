@@ -241,7 +241,7 @@
           },
           triggerURL() {
             if (this.eventData.id) {
-              return `${axios.defaults.baseURL}search?q=${encodeURI('"event":' + this.eventData.id)}&phrase=1`;
+              return `${axios.defaults.baseURL}search?q=${encodeURI('"event_on":' + this.eventData.id)}&phrase=1`;
             }
             return window.location.href;
           },
