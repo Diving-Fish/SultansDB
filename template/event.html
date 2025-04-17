@@ -288,6 +288,9 @@
             else if (key == "rite_end") {
               return `${this.tryGetName(value)} 结束后`
             }
+            else if (key === 'card_clean') {
+              return `完成苏丹卡 ${this.tryGetName(value)} 后`
+            }
           },
           getTypeText(type) {
             if (type === 'char') return '角色';
@@ -394,7 +397,6 @@
               else if (key === 'prompt') {
                 text += prefix + this.getPromptText(key, obj[key]) + '<br>';
               }
-              
               // Handle slot-related keys (e.g., s1+equip)
               else if (key.match(/!?s(\d+)(\+|\-|\.|_|=)(.+)/g)) {
                 text += prefix + this.getSlotText(key, obj[key]) + '<br>';
@@ -434,15 +436,34 @@
                   }
                 }
               }
-              else if (key.match(/!?(table_)?have_/g)) {
-                const reg = /!?(table_)?have_(.+)/g;
+              else if (key.match(/!?(table_)?have_(\d+)(_?)(.*)/g)) {
+                const reg = /!?(table_)?have_(\d+)(_?)(.*)/g;
                 const match = reg.exec(key);
                 if (match) {
                   if (key.startsWith('!')) {
-                    text += prefix + `不存在 ${this.tryGetName(match[2])}<br>`;
+                    if (match[3]) {
+                      text += prefix + `非 ${this.tryGetName(match[2])} ${match[4]} ${obj[key]}<br>`;
+                    } else {
+                      text += prefix + `不存在 ${this.tryGetName(match[2])}<br>`;
+                    }
                   } else {
-                    text += prefix + `存在 ${this.tryGetName(match[2])}<br>`;
+                    if (match[3]) {
+                      text += prefix + `${this.tryGetName(match[2])} ${match[4]} ${obj[key]}<br>`;
+                    } else {
+                      text += prefix + `存在 ${this.tryGetName(match[2])}<br>`;
+                    }
                   }
+                }
+              }
+              else if (key.match(/loot(已拥有\+1)?/g))
+              {
+                const reg = /loot(已拥有\+1)?/g;
+                const match = reg.exec(key);
+                if (match[1]) {
+                  text += prefix + `抽取并获得 ${this.tryGetName(obj[key])}<br>`;
+                }
+                else {
+                  text += `抽取 ${this.tryGetName(obj[key])}<br>`;
                 }
               }
               // Handle over key
@@ -493,6 +514,10 @@
             }
             if (num >= 5300000 && num < 6000000) {
               prefix = `<a href="${axios.defaults.baseURL}config/event/` + id + '.json">';
+              suffix = '</a>';
+            }
+            if (num >= 6000000 && num < 7000000) {
+              prefix = `<a href="${axios.defaults.baseURL}config/loot/` + id + '.json">';
               suffix = '</a>';
             }
             return prefix + (this.key_name_map[id] || id) + suffix;

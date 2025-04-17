@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title id="title"> - 苏丹的数据库</title>
+  <title> - 苏丹的数据库</title>
   <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
   <link href="https://unpkg.zhimg.com/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
 </head>
@@ -18,163 +18,47 @@
             <v-icon>mdi-home</v-icon>
           </v-btn>
         </a>
-        <v-toolbar-title>领地事件</v-toolbar-title>
-        <a style="margin-left: 16px; padding-top: 6px" href="https://github.com/Diving-Fish/SultansDB"><img src="https://img.shields.io/github/stars/Diving-Fish/SultansDB?style=social"></a>
+        <v-toolbar-title>战利品</v-toolbar-title>
+        <a style="margin-left: 16px; padding-top: 6px" href="https://github.com/Diving-Fish/SultansDB"><img
+            src="https://img.shields.io/github/stars/Diving-Fish/SultansDB?style=social"></a>
         <v-spacer></v-spacer>
-        <v-text-field
-          v-model="globalSearch"
-          append-icon="mdi-magnify"
-          label="全站搜索"
-          single-line
-          hide-details
-          class="ml-2"
-          @click:append="doSearch"
-          @keyup.enter="doSearch"
-        ></v-text-field>
+        <v-text-field v-model="globalSearch" append-icon="mdi-magnify" label="全站搜索" single-line hide-details
+          class="ml-2" @click:append="doSearch" @keyup.enter="doSearch"></v-text-field>
       </v-app-bar>
 
       <v-main>
         <v-container>
           <v-card class="mx-auto my-4" max-width="900">
             <v-card-title class="headline primary white--text">
-              {{ cardData.name }}
-              <v-chip class="ml-2" color="secondary" small>ID: {{ cardData.id }}</v-chip>
+              {{ lootData.name }}
+              <v-chip class="ml-2" color="secondary" small>ID: {{ lootData.id }}</v-chip>
             </v-card-title>
 
             <v-card-text>
-              <p class="text-h6 font-italic">{{ cardData.text }}</p>
+              <v-row class="mt-2">
+                <v-col cols="12" sm="6">
+                  <p><strong>重复次数:</strong> {{ lootData.repeat }}</p>
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <p><strong>类型:</strong> {{ getLootTypeText(lootData.type) }}</p>
+                </v-col>
+              </v-row>
 
               <v-divider class="my-4"></v-divider>
 
-              <div class="my-4">
-                <h3>基础信息</h3>
-                <v-chip-group>
-                  <v-chip color="info" small>耗时：{{ cardData.round_number }}天</v-chip>
-                  <v-chip color="info" small>时限：{{ cardData.waiting_round == 0 ? '不限' : cardData.waiting_round + '天' }}</v-chip>
-                  <v-chip color="info" small v-if="cardData.auto_begin">自动启动</v-chip>
-                  <v-chip color="info" small v-if="cardData.auto_result">自动结算</v-chip>
-                </v-chip-group>
-              </div>
-
-              <div v-if="cardData.tag_tips && cardData.tag_tips.length > 0">
-                <h3>属性</h3>
-                <v-chip-group>
-                  <v-chip v-for="(tag, index) in cardData.tag_tips" :key="index" color="info" small>
-                    {{ tag }}
-                  </v-chip>
-                </v-chip-group>
-              </div>
-
-              <div class="my-4" v-if="cardData.tips_text && cardData.tips_text.length > 0">
-                <h3>提示信息</h3>
-                <v-card outlined class="pa-3 mb-2" v-for="(tip, index) in cardData.tips_text" :key="'tip-'+index">
-                  <div v-html="formatText(tip)"></div>
-                </v-card>
-              </div>
-
-              <v-expansion-panels class="mt-4">
-                <v-expansion-panel>
-                  <v-expansion-panel-header>卡牌槽位信息</v-expansion-panel-header>
-                  <v-expansion-panel-content>
-                    <div v-for="(slot, key) in cardData.cards_slot" :key="key" class="mb-4 pa-2"
-                      style="border: 1px solid #e0e0e0; border-radius: 4px;">
-                      <div><strong>槽位:</strong> {{ key }}</div>
-                      <div><strong>描述:</strong> {{ slot.text }}</div>
-                      <div><strong>条件:</strong>
-                        <div v-html="formatSlotCondition(slot.condition)"></div>
-                      </div>
-                    </div>
-                  </v-expansion-panel-content>
-                </v-expansion-panel>
-
-                <v-expansion-panel v-if="Object.keys(cardData.waiting_round_end_action).length > 0">
-                  <v-expansion-panel-header>超时信息</v-expansion-panel-header>
-                  <v-expansion-panel-content>
-                    <div v-for="(settlement, index) in cardData.waiting_round_end_action" :key="'settlement-'+index"
-                      class="mb-4 pa-2" style="border: 1px solid #e0e0e0; border-radius: 4px;">
-                      <div><strong>条件:</strong>
-                        <div v-html="formatCondition(settlement.condition)"></div>
-                      </div>
-                      <div><strong>标题:</strong> {{ settlement.result_title }}</div>
-                      <div><strong>文本:</strong> {{ settlement.result_text }}</div>
-                      <div><strong>结果:</strong>
-                        <div v-html="formatResult(settlement.result)"></div>
-                      </div>
-                      <div><strong>动作:</strong>
-                        <div v-html="formatAction(settlement.action)"></div>
-                      </div>
-                    </div>
-                  </v-expansion-panel-content>
-                </v-expansion-panel>
-
-                <v-expansion-panel v-if="Object.keys(cardData.settlement_prior).length > 0">
-                  <v-expansion-panel-header>结算前信息</v-expansion-panel-header>
-                  <v-expansion-panel-content>
-                    <div v-for="(settlement, index) in cardData.settlement_prior" :key="'settlement-'+index"
-                      class="mb-4 pa-2" style="border: 1px solid #e0e0e0; border-radius: 4px;">
-                      <div><strong>条件:</strong>
-                        <div v-html="formatCondition(settlement.condition)"></div>
-                      </div>
-                      <div><strong>标题:</strong> {{ settlement.result_title }}</div>
-                      <div><strong>文本:</strong> {{ settlement.result_text }}</div>
-                      <div><strong>结果:</strong>
-                        <div v-html="formatResult(settlement.result)"></div>
-                      </div>
-                      <div><strong>动作:</strong>
-                        <div v-html="formatAction(settlement.action)"></div>
-                      </div>
-                    </div>
-                  </v-expansion-panel-content>
-                </v-expansion-panel>
-
-                <v-expansion-panel>
-                  <v-expansion-panel-header>结算信息</v-expansion-panel-header>
-                  <v-expansion-panel-content>
-                    <div v-for="(settlement, index) in cardData.settlement" :key="'settlement-'+index" class="mb-4 pa-2"
-                      style="border: 1px solid #e0e0e0; border-radius: 4px;">
-                      <div><strong>条件:</strong>
-                        <div v-html="formatCondition(settlement.condition)"></div>
-                      </div>
-                      <div><strong>标题:</strong> {{ settlement.result_title }}</div>
-                      <div><strong>文本:</strong> {{ settlement.result_text }}</div>
-                      <div><strong>结果:</strong>
-                        <div v-html="formatResult(settlement.result)"></div>
-                      </div>
-                      <div><strong>动作:</strong>
-                        <div v-html="formatAction(settlement.action)"></div>
-                      </div>
-                    </div>
-                  </v-expansion-panel-content>
-                </v-expansion-panel>
-
-                <v-expansion-panel v-if="Object.keys(cardData.settlement_extre).length > 0">
-                  <v-expansion-panel-header>结算后信息</v-expansion-panel-header>
-                  <v-expansion-panel-content>
-                    <div v-for="(settlement, index) in cardData.settlement_extre" :key="'settlement-'+index"
-                      class="mb-4 pa-2" style="border: 1px solid #e0e0e0; border-radius: 4px;">
-                      <div><strong>条件:</strong>
-                        <div v-html="formatCondition(settlement.condition)"></div>
-                      </div>
-                      <div><strong>标题:</strong> {{ settlement.result_title }}</div>
-                      <div><strong>文本:</strong> {{ settlement.result_text }}</div>
-                      <div><strong>结果:</strong>
-                        <div v-html="formatResult(settlement.result)"></div>
-                      </div>
-                      <div><strong>动作:</strong>
-                        <div v-html="formatAction(settlement.action)"></div>
-                      </div>
-                    </div>
-                  </v-expansion-panel-content>
-                </v-expansion-panel>
-              </v-expansion-panels>
+              <h3>战利品清单</h3>
+              <v-data-table :headers="lootHeaders" :items="formattedLootItems" :items-per-page="10" class="elevation-1"
+                dense>
+                <template v-slot:item.condition="{ item }">
+                  <div v-html="formatCondition(item.condition)"></div>
+                </template>
+                <template v-slot:item.id="{ item }">
+                  <div v-html="tryGetName(item.id)"></div>
+                </template>
+              </v-data-table>
             </v-card-text>
 
             <v-card-actions>
-              <a :href="triggerURL">
-                <v-btn color="primary" text>
-                  搜索来源
-                </v-btn>
-              </a>
               <v-spacer></v-spacer>
               <v-btn color="primary" text @click="showRawJson = !showRawJson">
                 {{ showRawJson ? '隐藏' : '查看' }}原始JSON
@@ -185,7 +69,7 @@
               <div v-if="showRawJson">
                 <v-divider></v-divider>
                 <v-card-text>
-                  <pre class="overflow-auto" style="max-height: 500px">{{ JSON.stringify(cardData, null, 2) }}</pre>
+                  <pre class="overflow-auto" style="max-height: 500px">{{ JSON.stringify(lootData, null, 2) }}</pre>
                 </v-card-text>
               </div>
             </v-expand-transition>
@@ -211,15 +95,10 @@
                 <v-divider class="my-3"></v-divider>
               </v-col>
 
-              <v-col cols="12" v-if="Object.keys(selectedCard.tag).length > 0">
+              <v-col cols="12" v-if="Object.keys(selectedCard.tag || {}).length > 0">
                 <h3 class="subtitle-1 font-weight-bold">标签</h3>
                 <v-chip-group column>
-                  <v-chip
-                    v-for="(value, tag) in selectedCard.tag"
-                    :key="tag"
-                    small
-                    class="card-tag"
-                  >
+                  <v-chip v-for="(value, tag) in selectedCard.tag" :key="tag" small class="card-tag">
                     {{ tag }}{{ value > 1 ? ': ' + value : '' }}
                   </v-chip>
                 </v-chip-group>
@@ -228,12 +107,7 @@
               <v-col cols="12" v-if="selectedCard.equips && selectedCard.equips.length > 0">
                 <h3 class="subtitle-1 font-weight-bold">可装备</h3>
                 <v-chip-group column>
-                  <v-chip
-                    v-for="equip in selectedCard.equips"
-                    :key="equip"
-                    small
-                    class="card-tag"
-                  >
+                  <v-chip v-for="equip in selectedCard.equips" :key="equip" small class="card-tag">
                     {{ equip }}
                   </v-chip>
                 </v-chip-group>
@@ -274,6 +148,27 @@
           <v-card-text v-html="char_origin_html"></v-card-text>
         </v-card>
       </v-dialog>
+
+      <!-- 事件详情对话框 -->
+      <v-dialog v-model="eventDialog" max-width="800px">
+        <v-card v-if="selectedEvent">
+          <v-card-title class="headline primary white--text">
+            {{ selectedEvent.text || selectedEvent.name || '事件详情' }}
+            <v-chip class="ml-2" color="secondary" small>ID: {{ selectedEvent.id }}</v-chip>
+          </v-card-title>
+          <v-card-text class="pa-4">
+            <v-divider class="my-3"></v-divider>
+            <pre class="overflow-auto" style="max-height: 400px">{{ JSON.stringify(selectedEvent, null, 2) }}</pre>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn color="primary" text :href="`${baseURL}config/event/${selectedEvent.id}.json`" target="_blank">
+              查看完整事件
+            </v-btn>
+            <v-spacer></v-spacer>
+            <v-btn color="primary" text @click="eventDialog = false">关闭</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </v-app>
   </div>
 
@@ -282,21 +177,30 @@
   <script src="https://unpkg.zhimg.com/axios/dist/axios.min.js"></script>
   <script>
     axios.defaults.baseURL = '/';
-    const cardData = //<<<card_data>>>//;
-     v = new Vue({
+    const lootData = //<<<loot_data>>>//;
+      v = new Vue({
         el: '#app',
         vuetify: new Vuetify(),
         data() {
           return {
-            cardData: cardData,
+            lootData: lootData,
             showRawJson: false,
             key_name_map: {},
             cards: [],
             selectedCard: null,
             detailDialog: false,
+            selectedEvent: null,
+            eventDialog: false,
             char_origin_map: {},
             char_origin_html: '',
-            globalSearch: ''
+            globalSearch: '',
+            lootHeaders: [
+              { text: 'ID / 名称', value: 'id', sortable: false, width: '25%' },
+              { text: '数量', value: 'num', align: 'center', width: '10%' },
+              { text: '类型', value: 'typeDisplay', align: 'center', width: '10%' },
+              { text: '条件', value: 'condition', sortable: false, width: '40%' },
+              { text: '权重', value: 'weight', align: 'center', width: '15%' },
+            ]
           };
         },
         mounted() {
@@ -321,18 +225,19 @@
             .catch(error => {
               console.error('Error fetching cards', error);
             });
-          document.title = this.cardData.name + ' - 苏丹的数据库';
+          document.title = this.lootData.name + ' - 苏丹的数据库';
         },
         computed: {
           baseURL() {
             return axios.defaults.baseURL;
           },
-          triggerURL() {
-            if (this.cardData.id) {
-              return `${axios.defaults.baseURL}search?q=${encodeURI('"rite":' + this.cardData.id)}&phrase=1`;
-            }
-            return window.location.href;
-          },
+          formattedLootItems() {
+            if (!this.lootData.item) return [];
+            return this.lootData.item.map(item => ({
+              ...item,
+              typeDisplay: this.getItemTypeText(item.type)
+            }));
+          }
         },
         methods: {
           doSearch() {
@@ -368,10 +273,32 @@
               }
             }
           },
+          getLootTypeText(type) {
+            switch (type) {
+              case 2: return '普通权重';
+              case 3: return '维新';
+              default: return '未知类型 (' + type + ')';
+            }
+          },
+          getItemTypeText(type) {
+            if (typeof type === 'string') {
+              switch (type.toLowerCase()) {
+                case 'char': return '角色';
+                case 'item': return '物品';
+                case 'card': return '卡牌';
+                case 'loot': return '抽取';
+                case 'event': return '事件';
+                case 'sudan': return '苏丹卡';
+                default: return type;
+              }
+            }
+            return type;
+          },
           getTypeText(type) {
             if (type === 'char') return '角色';
             else if (type === 'item') return '物品';
             else if (type === 'sudan') return '苏丹卡';
+            return type;
           },
           getRarityColor(rare) {
             switch (rare) {
@@ -397,16 +324,12 @@
             this.char_origin_html = '';
           },
           formatText(text) {
-            // 处理文本中的颜色标签
+            if (!text) return '';
             if (text.includes('<color=')) {
               return text.replace(/<color=#([A-Fa-f0-9]{6})>(.*?)<\/color>/g,
                 '<span style="color: #$1">$2</span>');
             }
             return text;
-          },
-          formatSlotCondition(condition) {
-            // 处理槽位条件文本
-            return this.getAllText('', condition);
           },
           formatCondition(condition) {
             // 简单展示条件
@@ -535,8 +458,7 @@
                   }
                 }
               }
-              else if (key.match(/loot(已拥有\+1)?/g))
-              {
+              else if (key.match(/loot(已拥有\+1)?/g)) {
                 const reg = /loot(已拥有\+1)?/g;
                 const match = reg.exec(key);
                 if (match[1]) {
@@ -568,6 +490,7 @@
             return text;
           },
           tryGetName(id) {
+            if (!id) return 'undefined';
             try {
               const obj = JSON.parse(id.replace(/'/g, '"'));
               if (Array.isArray(obj)) {

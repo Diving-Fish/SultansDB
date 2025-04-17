@@ -304,6 +304,16 @@ async def serve_config(file_path: str):
                 return content
         else:
             return await send_file(f'config/{file_path}')
+    elif file_path.startswith('loot'):
+        if os.path.exists('formatted/' + file_path):
+            with open('formatted/' + file_path, 'r', encoding='utf-8') as f2:
+                json_content = f2.read()
+            with open('template/loot.html', 'r', encoding="utf-8") as f:
+                content = f.read()
+                content = content.replace('//<<<loot_data>>>//', json_content)
+                if baseURL != '/':
+                    content = content.replace("axios.defaults.baseURL = '/'", f"axios.defaults.baseURL = '{baseURL}'")
+                return content
     else:
         return await send_file(f'config/{file_path}')
 

@@ -1,0 +1,8 @@
+__pycache__
+config
+create
+formatted
+venv
+char_origin_rite.json
+key_to_name.json
+*.sh
