@@ -276,7 +276,8 @@
           getLootTypeText(type) {
             switch (type) {
               case 2: return '普通权重';
-              case 3: return '维新';
+              case 3: return '仅抽取未出现过的物品';
+              case 99: return '全部';
               default: return '未知类型 (' + type + ')';
             }
           },
@@ -286,6 +287,8 @@
                 case 'char': return '角色';
                 case 'item': return '物品';
                 case 'card': return '卡牌';
+                case 'rite': return '领地事件';
+                case 'event': return '事件触发';
                 case 'loot': return '抽取';
                 case 'event': return '事件';
                 case 'sudan': return '苏丹卡';
